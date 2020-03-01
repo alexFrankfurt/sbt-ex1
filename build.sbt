@@ -1,18 +1,23 @@
 name := "sbt-ex1"
 
 lazy val stTransform = taskKey[StateTransform]("Changes sbt state")
+lazy val generated =  AttributeKey[Boolean]("my-settings-generated")
+def generateCommandName = "generate"
+def initializem = Command.command(generateCommandName)(fixState(_))
 
-stTransform := {
-    val s = state.value
-    val extracted = Project.extract(s)
+commands += initializem 
 
-    val nwSt = extracted.appendWithSession(Seq(), s)
-
-    new StateTransform(nwSt)
-}
+def fixState(state: State): State = 
+  if(state.get(generated) getOrElse false) {
+    state
+  } else {
+    val extracted = Project.extract(state)
+    extracted.appendWithSession(Seq(), state)
+    state.put(generated, true)
+  }
 
 lazy val startupTransition: State => State = { s: State =>
-  "stTransform" :: s
+  "generate" :: s
 }
 
 Global / onLoad := {
